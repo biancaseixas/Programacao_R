@@ -1,0 +1,203 @@
+#### LER E SALVAR BASES #####
+
+## CSV
+base <- read.csv(file = "BASE.csv")
+
+#salvar em csv
+write.csv2(x = base, file = "caminho/base.csv" , row.names = F)
+
+#Informacoes da formula 
+# x = base que quer ser salva 
+# file = caminho da rede 
+# row.names = não incluir uma coluna que tem a contagem de numeros de linhas.
+
+#Observação :
+# Existem dois tipos de funções para ler e salvar o csv:
+# 
+# read.csv <- serve para arquivos internacionais, onde o decimal é separado por 
+# ponto.
+# 
+# read.csv2 <- serve para arquivos nacionais, onde o decimal é separado por 
+# virgulas.
+# 
+# O mesmo acontece para salvar a base (write.csv e write.csv2)
+
+## Excel
+
+#Pacotes
+install.packages("readxl")
+install.packages("write")
+require(readxl)
+require(writexl)
+
+base0 <- read_excel(path = "caminho/base.xlsx")
+
+base1 <- read_excel(path = "caminho/base.xlsx"
+                    ,sheet = "Aba1"
+                    ,range = "A1:D5")
+
+#Informacoes da funcao
+# path = caminho da rede
+# sheet = aba que deseja passar para o R
+# range = quais serao as celulas selecionadas do excel 
+# 
+# Se nao tiver sheet e nem range, o R vai ler a primeira aba inteira.
+
+#Salvar a base
+write_xlsx(base1,"caminho/base.xlsx")
+
+##RData
+load(file = "caminho/base.RData)
+
+#salvar a base
+save(base,file = "caminho/base.RData")
+
+#### Manipulação de dados #####
+
+#limpar arquivos 
+rm(list = ls())
+gc() #Limpar memoria
+
+#Para instalar pacotes
+# install.packages() usar "" no nome do pacote que quer instalar 
+# require() #para liberar o pacote
+# library() #Toda vez que abrir o R tem que liberar os pacotes
+
+#Lendo a base
+bs <- read.csv2(file = "caminho/base.csv")
+
+#ver a base
+View(bs)
+
+## MANIPULACAO DE DADOS ##
+
+# PARA AS PRÓXIMAS FUNÇÕES CRIAREMOS UMA BASE
+
+#criar uma sequencia de datas
+require(data.table)
+
+data <- seq(from = as.Date("2021-01-01")
+            ,to = as.Date("2021-12-31")
+            ,by="day")
+            
+#Informações da formula
+seq - função de sequencia 
+    from = começo da sequencia
+    to = final da sequencia 
+    by = Neste caso é por dia, mas se for numeros inteiros nao precisa do by.
+       as.Date = Informar que o chr que estamos colocando é Data
+
+item <- c(rep("SAPATO",48)
+          ,rep("COLAR",10)
+          ,rep("CALCA",87)
+          ,rep("BLUSA",61)
+          ,rep("COLAR",33)
+          ,rep("BLUSA",28)
+          ,rep("SAPATO",11)
+          ,rep("CALCA",55)
+          ,rep("BOLSA",32))
+
+#Informações da formula
+rep - função de repetição (o que quer repetir , quantas vezes irá repetir)
+
+quantidade <- round(runif(n = 365
+                      ,min = 0
+                      ,max = 10),0)
+
+#Informações da formula                      
+runif - função de gerar numeros aleatorios
+       n = quantidade de vezes que irá gerar os numeros
+       min = começo da sequencia 
+       max = final da sequencia 
+round - função para escolher quantas casas decimais queremos (numero, quantidade de decimais)
+
+#Criando a base
+require(data.table)
+
+bs <- data.table() #cria um data.table nulo
+
+#criar colunas dentro da base
+bs$DATA <- data          
+bs$ITEM <- item  
+bs$QUANTIDADE <- quantidade
+
+# Saber como a base está compactada e estruturada
+str(bs)
+
+#Se a coluna data nao estiver em Date usar a formula as.Date 
+
+bs$DATA <- as.Date(bs$DATA , format = "%d/%m/%Y")
+bs$DATA <- as.Date(bs$DATA , format = "%d/%m/%Y" , origin = "1899-12-30") 
+
+# format = é obrigatoria quando a data nao estiver no formato "Ano-mes-dia" (2020-12-01)
+# para transformar para data, sempre indicar em qual formato a data esta escrita 
+# na planilha original
+# Ex: se a data estiver no formato 01/Dez/2020, format="%d/%B/%Y
+# Para maiores consultas: https://www.r-bloggers.com/2013/08/date-formats-in-r/
+# origin = origem da data do excel, quando a celula esta em numerico.
+
+# Manipular linhas e colunas 
+# bs[x,y] x = colunas e y = linhas
+
+#Tirar a primeira coluna
+bs <- bs[,-1]
+
+#Tirar a primeira linha
+bs <- bs[-1,]
+
+#Retornar colunas solicitadas
+bs[,1:3]
+
+#Retornar linhas solicitadas
+bs[1:20,]
+
+##Criar colunas mes, dia e ano com dplyr e %>% 
+require(dplyr)
+require(magrittr)
+
+bs <- bs %>% dplyr::mutate(MES = month(bs$DATA)
+                           ,DIA = mday(bs$DATA)
+                           ,ANO = year(bs$DATA))
+                 
+#Informações da formula  
+# %>%  - ele informa a base para qual a função a frente tem que se referir (base %>% função)
+# dplyr:: - é uma gramática de manipulação de dados, ou seja, ele forneece um conjunto de funções afim de resolver os problemas com o banco de dados
+# mutate - Cria colunas dentro da base
+         month - retorna o mês da data selecionada
+         mday - retorna o dia da data selecionada
+         year - retorna o ano da data selecionada
+         
+# Selecionar colunas da base 
+base <- bs %>% dplyr::select("ANO"
+                             ,"MES"
+                             ,"DIA"
+                             ,"ITEM"
+                             ,"QUANTIDADE")
+
+
+# Filtrar
+filtro <- bs %>% dplyr::filter(ANO == "2020" &
+                               MES != "5" &
+                               ITEM == c("COLAR","SAPATO") &
+                               QUANTIDADE >= "3")
+                               
+#Informações da formula 
+# == - igual 
+# != - diferente 
+# == c() - igual a dois chr ou mais da mesma coluna 
+# >= - maior ou igual 
+# <= - menor ou igual
+
+# Agrupar base e criar media e soma
+agrupar <- bs %>% group_by(ANO,MES,ITEM) %>% 
+  summarise(QUANTIDADE_POR_MES = sum(QUANTIDADE)
+            ,MEDIA_POR_MES = mean(QUANTIDADE))
+            
+#Informações da formula 
+# group_by - agrupar as colunas selecionadas
+# summarise - criar colunas a partir do agrupamento
+#           sum = soma da coluna selecionada
+#           mean = media da soma selecionada
+
+# Remover bases criadas que não são mais necessarias 
+rm(filtro)
